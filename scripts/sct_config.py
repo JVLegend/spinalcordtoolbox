@@ -4,25 +4,6 @@ import logging
 import subprocess
 
 
-def __get_sct_version():
-    """Get git commit if in repo and version for the version.txt file
-
-    :return: Tuple (install_type, sct_commit, sct_branch, version_sct)
-    """
-    sct_commit = __git_commit__
-    sct_branch = __git_branch__
-
-    if sct_commit is not 'unknown':
-        install_type = 'git'
-    else:
-        install_type = 'package'
-
-    with io.open(os.path.join(__sct_dir__, 'version.txt'), 'r') as myfile:
-        version_sct = myfile.read().replace('\n', '')
-
-    return install_type, sct_commit, sct_branch, version_sct
-
-
 def __get_branch():
     """
     Fallback if for some reason the value vas no set by sct_launcher
@@ -53,13 +34,28 @@ def __get_commit():
     return 'unknown'
 
 
+def _git_info(commit_env='SCT_COMMIT',branch_env='SCT_BRANCH'):
+
+    sct_commit = os.getenv(commit_env, __get_commit())
+    sct_branch = os.getenv(branch_env, __get_branch())
+
+
+    if sct_commit is not 'unknown':
+        install_type = 'git'
+    else:
+        install_type = 'package'
+
+    with io.open(os.path.join(__sct_dir__, 'version.txt'), 'r') as myfile:
+        version_sct = myfile.read().replace('\n', '')
+
+    return install_type, sct_commit, sct_branch, version_sct
+
+
 # Basic sct config
 __sct_dir__ = os.getenv("SCT_DIR", os.path.dirname(os.path.realpath(__file__)).rstrip("scripts"))
 __data_dir__ = os.getenv("SCT_DATA_DIR", "{}/data".format(__sct_dir__))
-# Be careful no to change the order commit, branch and then version!
-__git_commit__ = os.getenv("SCT_COMMIT", __get_commit())
-__git_branch__ = os.getenv("SCT_BRANCH", __get_branch())
-__version__ = '-'.join(__get_sct_version())
+__version__ = '-'.join(_git_info(commit_env='SCT_COMMIT',branch_env='SCT_BRANCH'))
+
 
 # statistic report level
 __report_log_level__ = logging.ERROR

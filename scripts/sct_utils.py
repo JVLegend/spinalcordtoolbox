@@ -124,9 +124,9 @@ def server_log_handler(client):
     sh = SentryHandler(client=client, level=sct_config.__report_log_level__)
     fmt = ("[%(asctime)s][%(levelname)s] %(filename)s: %(lineno)d | "
             "%(message)s")
-    formater = logging.Formatter(fmt=fmt, datefmt="%H:%M:%S")
-    formater.converter = time.gmtime
-    sh.setFormatter(formater)
+    formatter = logging.Formatter(fmt=fmt, datefmt="%H:%M:%S")
+    formatter.converter = time.gmtime
+    sh.setFormatter(formatter)
 
     log.addHandler(sh)
     return sh
