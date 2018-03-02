@@ -57,7 +57,7 @@ def init_sct():
     :return:
     """
     start_stream_logger()
-    report_errors_to_servers()
+    init_error_client()
 
 
 def start_stream_logger():
@@ -82,7 +82,7 @@ def start_stream_logger():
     log.addHandler(stream_handler)
 
 
-def report_errors_to_servers():
+def init_error_client():
     """ Send traceback to neuropoly servers
 
     :return:
