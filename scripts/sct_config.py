@@ -53,7 +53,7 @@ def _git_info(commit_env='SCT_COMMIT',branch_env='SCT_BRANCH'):
 
 # Basic sct config
 __sct_dir__ = os.getenv("SCT_DIR", os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-__data_dir__ = os.getenv("SCT_DATA_DIR", os.path.join(__sct_dir__, data))
+__data_dir__ = os.getenv("SCT_DATA_DIR", os.path.join(__sct_dir__, 'data'))
 __version__ = '-'.join(_git_info(commit_env='SCT_COMMIT', branch_env='SCT_BRANCH'))
 
 
