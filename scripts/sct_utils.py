@@ -30,8 +30,14 @@ if os.getenv('SENTRY_DSN', None):
     # do no import if not needed
     import raven
 
-# TODO: under run(): add a flag "ignore error" for isct_ComposeMultiTransform
-# TODO: check if user has bash or t-schell for fsloutput definition
+if sys.hexversion < 0x03030000:
+    import pipes
+    def list2cmdline(lst):
+        return " ".join(pipes.quote(x) for x in lst)
+else:
+    import shlex
+    def list2cmdline(lst):
+        return " ".join(shlex.quote(x) for x in lst)
 
 """
 Basic logging setup for the sct
@@ -296,22 +302,30 @@ def run_old(cmd, verbose=1):
         return status, output
 
 
-def run(cmd, verbose=1, raise_exception=True, cwd=None):
+def run(cmd, verbose=1, raise_exception=True, cwd=None, env=None):
     # if verbose == 2:
     #     printv(sys._getframe().f_back.f_code.co_name, 1, 'process')
 
     if cwd is None:
         cwd = os.getcwd()
 
-    if verbose:
-        printv("%s # in %s" % (cmd, cwd), 1, 'code')
+    if env is None:
+        env = os.environ
 
     if sys.hexversion < 0x03000000 and isinstance(cmd, unicode):
         cmd = str(cmd)
 
+    if isinstance(cmd, str):
+        cmdline = cmd
+    else:
+        cmdline = list2cmdline(cmd)
+
+    if verbose:
+        printv("%s # in %s" % (cmdline, cwd), 1, 'code')
+
     shell = isinstance(cmd, str)
 
-    process = subprocess.Popen(cmd, shell=shell, cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    process = subprocess.Popen(cmd, shell=shell, cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
     output_final = ''
     while True:
         # Watch out for deadlock!!!
@@ -331,7 +345,7 @@ def run(cmd, verbose=1, raise_exception=True, cwd=None):
     # process.terminate()
 
     if status != 0 and raise_exception:
-        raise RunError(output_final[0:-1])
+        raise RunError(output)
 
     return status, output
 
@@ -426,11 +440,44 @@ def display_viewer_syntax(files, colormaps=[], minmax=[], opacities=[], mode='',
         printv(cmd + '\n', verbose=1, type='info')
 
 
-def copy(src, dst):
-    """Copy src to dst.
-    If src and dst are the same files, don't crash.
+def mkdir(path, verbose=1):
+    """Create a folder, like os.mkdir
     """
     try:
+        printv("mkdir %s" % (path), verbose=verbose)
+        os.mkdir(path)
+    except Exception as e:
+        raise
+
+def rm(path, verbose=1):
+    """Remove a file, almost like os.remove
+    """
+    try:
+        printv("rm %s" % (path), verbose=verbose)
+        os.remove(path)
+    except Exception as e:
+        raise
+
+def mv(src, dst, verbose=1):
+    """Move a file from src to dst, almost like os.rename
+    """
+    try:
+        printv("mv %s %s" % (src, dst), verbose=verbose)
+        os.rename(src, dst)
+    except Exception as e:
+        raise
+
+def copy(src, dst, verbose=1):
+    """Copy src to dst, almost like shutil.copy
+    If src and dst are the same files, don't crash.
+    """
+    if not os.path.isfile(src):
+        folder = os.path.dirname(src)
+        contents = os.listdir(folder)
+        raise Exception("Couldn't find %s in %s (contents: %s)" \
+         % (os.path.basename(src), folder, contents))
+    try:
+        printv("cp %s %s" % (src, dst), verbose=verbose)
         shutil.copy(src, dst)
     except Exception as e:
         if sys.hexversion < 0x03000000:
@@ -440,6 +487,39 @@ def copy(src, dst):
             if isinstance(e, shutil.SameFileError):
                 return
         raise # Must be another error
+
+def rmtree(folder, verbose=1):
+    """Recursively remove folder, almost like shutil.rmtree
+    """
+    try:
+        printv("rm -rf %s" % (folder), verbose=verbose)
+        shutil.rmtree(folder, ignore_errors=True)
+    except Exception as e:
+        raise # Must be another error
+
+
+def get_sct_version():
+    sct_commit = 'unknown'
+    sct_branch = 'unknown'
+
+    # get path of SCT
+    path_sct = os.environ.get("SCT_DIR", os.path.dirname(os.path.dirname(__file__)))
+
+    if os.path.isdir(os.path.join(path_sct, '.git')):
+        install_type = 'git'
+        status, output = run(["git", "rev-parse", "HEAD"], verbose=0, cwd=path_sct)
+        if status == 0:
+            sct_commit = output
+        status, output = run(["git", "rev-parse", "--abbrev-ref", "HEAD"], verbose=0, cwd=path_sct)
+        if status == 0:
+            sct_branch = output
+    else:
+        install_type = 'package'
+
+    with io.open(os.path.join(path_sct, 'version.txt'), 'r') as myfile:
+        version_sct = myfile.read().replace('\n', '')
+
+    return install_type, sct_commit, sct_branch, version_sct
 
 
 #=======================================================================================================================
@@ -463,8 +543,8 @@ def checkRAM(os, verbose=1):
         ram_total = float(ram_split[3])
 
         # Get process info
-        ps = subprocess.Popen(['ps', '-caxm', '-orss,comm'], stdout=subprocess.PIPE).communicate()[0]
-        vm = subprocess.Popen(['vm_stat'], stdout=subprocess.PIPE).communicate()[0]
+        ps = subprocess.Popen(['ps', '-caxm', '-orss,comm'], stdout=subprocess.PIPE).communicate()[0].decode()
+        vm = subprocess.Popen(['vm_stat'], stdout=subprocess.PIPE).communicate()[0].decode()
 
         # Iterate processes
         processLines = ps.split('\n')
@@ -799,7 +879,7 @@ class TempFolder(object):
 
     def cleanup(self):
         """Remove the created folder and its contents."""
-        shutil.rmtree(self.path_tmp, ignore_errors=True)
+        rmtree(self.path_tmp)
 
 
 #=======================================================================================================================
@@ -1053,7 +1133,7 @@ def get_interpolation(program, interp):
         printv('WARNING (' + os.path.basename(__file__) + '): interp_program not assigned. Using linear for ants_affine.', 1, 'warning')
         interp_program = ' -n Linear'
     # return
-    return interp_program
+    return interp_program.strip().split()
 
 
 #=======================================================================================================================
