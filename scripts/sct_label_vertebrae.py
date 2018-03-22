@@ -162,11 +162,7 @@ sct_label_vertebrae -i t2.nii.gz -s t2_seg_manual.nii.gz  "$(< init_label_verteb
     parser.add_option(name='-qc',
                       type_value='folder_creation',
                       description='The path where the quality control generated content will be saved',
-                      default_value=os.path.expanduser('~/qc_data'))
-    parser.add_option(name='-noqc',
-                      type_value=None,
-                      description='Prevent the generation of the QC report',
-                      mandatory=False)
+                      default_value=None)
     return parser
 
 
@@ -334,7 +330,7 @@ def main(args=None):
 
     # Generate QC report
     try:
-        if '-qc' in arguments and not arguments.get('-noqc', False):
+        if '-qc' in arguments:
             qc_path = arguments['-qc']
 
             import spinalcordtoolbox.reports.qc as qc

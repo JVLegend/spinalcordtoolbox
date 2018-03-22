@@ -38,11 +38,7 @@ def get_parser():
     parser.add_option(name='-qc',
                       type_value='folder_creation',
                       description='The path where the quality control generated content will be saved',
-                      default_value=os.path.expanduser('~/qc_data'))
-    parser.add_option(name='-noqc',
-                      type_value=None,
-                      description='Prevent the generation of the QC report',
-                      mandatory=False)
+                      default_value=None)
 
     parser.add_option(name="-m",
                       type_value='multiple_choice',
@@ -83,8 +79,6 @@ def run_main():
 
     if '-qc' in arguments:
         qc = os.path.abspath(arguments['-qc'])
-    if '-noqc' in arguments:
-        qc = False
     if qc:
         qc_path = qc
         sct.printv('\nSave quality control images (in %s)...' % qc_path, verbose, 'normal')

@@ -131,11 +131,7 @@ def get_parser():
     parser.add_option(name='-qc',
                       type_value='folder_creation',
                       description='The path where the quality control generated content will be saved',
-                      default_value=os.path.expanduser('~/qc_data'))
-    parser.add_option(name='-noqc',
-                      type_value=None,
-                      description='Prevent the generation of the QC report',
-                      mandatory=False)
+                      default_value=None)
     parser.add_option(name="-igt",
                       type_value="image_nifti",
                       description="File name of ground-truth template cord segmentation (binary nifti).",
@@ -596,7 +592,7 @@ def main(args=None):
     elapsed_time = time.time() - start_time
     sct.printv('\nFinished! Elapsed time: ' + str(int(round(elapsed_time))) + 's', verbose)
 
-    if '-qc' in arguments and not arguments.get('-noqc', False):
+    if '-qc' in arguments:
         qc_path = arguments['-qc']
 
         import spinalcordtoolbox.reports.qc as qc
