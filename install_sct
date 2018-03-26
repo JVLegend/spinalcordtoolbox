@@ -36,7 +36,7 @@ SCRIPT_DIR="scripts"
 DATA_DIR="data"
 PYTHON_DIR="python"
 BIN_DIR="bin"
-STATS_DNS="https://www.neuro.polymtl.ca/_media/downloads/stats_dns.txt"
+STATS_DSN="https://www.neuro.polymtl.ca/_media/downloads/stats_dsn.txt"
 
 # Force a clean exit
 finish ()
@@ -401,8 +401,8 @@ fi
 export SCT_ADD_ENV_VARS
 # add env vars to set in sct_laucher here SCT_ADD_ENV_VARS can have many lines
 if [ ${REPORT_STATS} ]; then
-  download "${TMP_DIR}/stats_dns.txt" "$STATS_DNS"
-  SCT_ADD_ENV_VARS="export SENTRY_DSN=$(cat ${TMP_DIR}/stats_dns.txt)"
+  download "${TMP_DIR}/stats_dsn.txt" "$STATS_DSN"
+  SCT_ADD_ENV_VARS="export SENTRY_DSN=$(cat ${TMP_DIR}/stats_dsn.txt)"
 fi
 echo -e "\nCreate launchers for Python scripts"
 cmd="mkdir -p ${SCT_DIR}/${BIN_DIR}"; echo ">> "$cmd; $cmd
