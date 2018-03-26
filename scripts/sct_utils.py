@@ -27,7 +27,7 @@ import time
 import sct_config
 
 if os.getenv('SENTRY_DSN', None):
-    # do no import if not needed
+    # do no import if Sentry is not set (i.e., if variable SENTRY_DSN is not defined)
     import raven
 
 if sys.hexversion < 0x03030000:
